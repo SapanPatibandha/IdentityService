@@ -1,0 +1,54 @@
+## Build results
+bin/
+obj/
+.vs/
+.vscode/
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+project.lock.json
+project.assets.json
+
+## Entity Framework
+*.db
+*.db-shm
+*.db-wal
+Migrations/
+
+## Logs
+logs/
+*.log
+
+## Environment & Configuration
+appsettings.Development.json
+appsettings.Production.json
+.env
+.env.local
+
+## IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Testing
+TestResults/
+.coverage
+coverage/
+
+## Docker
+.docker/
+docker-compose.override.yml
+
+## SSL Certificates
+*.pem
+*.key
+*.crt

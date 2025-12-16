@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Service - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        nav button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        nav button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        nav button:hover {
+            color: #667eea;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        section h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #555;
+            font-size: 13px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button.btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button.btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        button.btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button.btn-secondary {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        button.btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        button.btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        button.btn-danger:hover {
+            background: #c82333;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .card p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .card .label {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        table thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            opacity: 0.5;
+            margin-bottom: 20px;
+        }
+
+        .api-base {
+            background: #f8f9fa;
+            padding: 10px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .api-base label {
+            margin-bottom: 8px;
+        }
+
+        .api-base input {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🔐 Identity Service</h1>
+                <p style="color: #666; font-size: 14px; margin-top: 4px;">Admin Dashboard</p>
+            </div>
+            <div>
+                <span class="status-badge online" id="status">● Online</span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="api-base">
+                <label>API Base URL</label>
+                <input type="text" id="apiUrl" value="http://localhost:5000/api/v1" placeholder="Enter API base URL">
+            </div>
+
+            <nav>
+                <button class="active" onclick="switchSection('dashboard')">Dashboard</button>
+                <button onclick="switchSection('users')">Users</button>
+                <button onclick="switchSection('clients')">OAuth2 Clients</button>
+                <button onclick="switchSection('scopes')">Scopes</button>
+                <button onclick="switchSection('audit')">Audit Logs</button>
+            </nav>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <h2>Dashboard</h2>
+                <div class="stats" id="stats">
+                    <div class="stat-card">
+                        <h3>Total Users</h3>
+                        <div class="number" id="totalUsers">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Clients</h3>
+                        <div class="number" id="totalClients">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Available Scopes</h3>
+                        <div class="number" id="totalScopes">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Recent Events</h3>
+                        <div class="number" id="recentEvents">-</div>
+                    </div>
+                </div>
+                <h3 style="margin-top: 30px;">Quick Actions</h3>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="switchSection('users'); showUserForm()">Create User</button>
+                    <button class="btn btn-primary" onclick="switchSection('clients'); showClientForm()">Create Client</button>
+                    <button class="btn btn-primary" onclick="switchSection('scopes'); showScopeForm()">Create Scope</button>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" class="section">
+                <h2>Manage Users</h2>
+                <div id="usersAlert"></div>
+                <button class="btn btn-primary" onclick="showUserForm()">+ New User</button>
+                <div id="usersTable" class="table-wrapper"></div>
+                <div id="usersGrid" class="grid"></div>
+            </section>
+
+            <!-- OAuth2 Clients Section -->
+            <section id="clients" class="section">
+                <h2>OAuth2 Clients</h2>
+                <div id="clientsAlert"></div>
+                <button class="btn btn-primary" onclick="showClientForm()">+ New Client</button>
+                <div id="clientsGrid" class="grid"></div>
+            </section>
+
+            <!-- Scopes Section -->
+            <section id="scopes" class="section">
+                <h2>Permission Scopes</h2>
+                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                    Scopes define what permissions an OAuth2 client can request. Use pattern: <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">api:featureName:read|write</code>
+                </p>
+                <div id="scopesAlert"></div>
+                <button class="btn btn-primary" onclick="showScopeForm()">+ New Scope</button>
+                <div id="scopesTable" class="table-wrapper"></div>
+            </section>
+
+            <!-- Audit Logs Section -->
+            <section id="audit" class="section">
+                <h2>Audit Logs</h2>
+                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">All authentication and administrative events are logged for security and compliance.</p>
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="auditFilter" placeholder="Filter by user ID or action..." style="max-width: 400px;">
+                    <button class="btn btn-secondary" onclick="loadAuditLogs()">Search</button>
+                </div>
+                <div id="auditTable" class="table-wrapper"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create User</h2>
+                <button class="close-btn" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            <form id="userForm" onsubmit="submitUserForm(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="firstName">
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="lastName">
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('userModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Client Modal -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create OAuth2 Client</h2>
+                <button class="close-btn" onclick="closeModal('clientModal')">&times;</button>
+            </div>
+            <form id="clientForm" onsubmit="submitClientForm(event)">
+                <div class="form-group">
+                    <label>Client Name</label>
+                    <input type="text" id="clientName" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="clientDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Client Type</label>
+                    <select id="clientType" required>
+                        <option value="Confidential">Confidential (Backend)</option>
+                        <option value="Public">Public (SPA/Mobile)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Redirect URIs (one per line)</label>
+                    <textarea id="redirectUris" placeholder="http://localhost:3000&#10;http://localhost:3000/callback"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Allowed Origins (one per line)</label>
+                    <textarea id="allowedOrigins" placeholder="http://localhost:3000"></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Create Client</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('clientModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scope Modal -->
+    <div id="scopeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Scope</h2>
+                <button class="close-btn" onclick="closeModal('scopeModal')">&times;</button>
+            </div>
+            <form id="scopeForm" onsubmit="submitScopeForm(event)">
+                <div class="form-group">
+                    <label>Scope Name <span style="font-size: 12px; color: #999;">(e.g., api:users:read)</span></label>
+                    <input type="text" id="scopeName" placeholder="api:featureName:read" required>
+                </div>
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" id="scopeDisplayName" placeholder="Read Users" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="scopeDescription" placeholder="Allows reading user data"></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Create Scope</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('scopeModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api/v1';
+        let currentToken = null;
+
+        // Initialize
+        document.getElementById('apiUrl').addEventListener('change', function() {
+            localStorage.setItem('apiUrl', this.value);
+        });
+
+        if (localStorage.getItem('apiUrl')) {
+            document.getElementById('apiUrl').value = localStorage.getItem('apiUrl');
+        }
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch(getApiUrl() + '/auth/login', {
+                    method: 'OPTIONS'
+                });
+                document.getElementById('status').textContent = '● Online';
+                document.getElementById('status').className = 'status-badge online';
+            } catch (e) {
+                document.getElementById('status').textContent = '● Offline';
+                document.getElementById('status').className = 'status-badge offline';
+            }
+        }
+
+        function switchSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            // Remove active from all nav buttons
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            // Add active to clicked button
+            event.target.classList.add('active');
+
+            // Load data for the section
+            if (sectionId === 'users') loadUsers();
+            else if (sectionId === 'clients') loadClients();
+            else if (sectionId === 'scopes') loadScopes();
+            else if (sectionId === 'audit') loadAuditLogs();
+            else if (sectionId === 'dashboard') loadDashboard();
+        }
+
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function showUserForm() {
+            document.getElementById('userForm').reset();
+            showModal('userModal');
+        }
+
+        function showClientForm() {
+            document.getElementById('clientForm').reset();
+            showModal('clientModal');
+        }
+
+        function showScopeForm() {
+            document.getElementById('scopeForm').reset();
+            showModal('scopeModal');
+        }
+
+        async function submitUserForm(e) {
+            e.preventDefault();
+            const data = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value
+            };
+
+            try {
+                const response = await fetch(getApiUrl() + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showAlert('usersAlert', 'User created successfully!', 'success');
+                    closeModal('userModal');
+                    loadUsers();
+                } else {
+                    showAlert('usersAlert', 'Error creating user', 'error');
+                }
+            } catch (error) {
+                showAlert('usersAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function submitClientForm(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('clientName').value,
+                description: document.getElementById('clientDescription').value,
+                clientType: document.getElementById('clientType').value,
+                redirectUris: document.getElementById('redirectUris').value.split('\n').filter(u => u.trim()),
+                allowedOrigins: document.getElementById('allowedOrigins').value.split('\n').filter(u => u.trim())
+            };
+
+            try {
+                const response = await fetch(getApiUrl() + '/admin/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showAlert('clientsAlert', 'Client created successfully!', 'success');
+                    closeModal('clientModal');
+                    loadClients();
+                } else {
+                    showAlert('clientsAlert', 'Error creating client', 'error');
+                }
+            } catch (error) {
+                showAlert('clientsAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function submitScopeForm(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('scopeName').value,
+                displayName: document.getElementById('scopeDisplayName').value,
+                description: document.getElementById('scopeDescription').value
+            };
+
+            try {
+                const response = await fetch(getApiUrl() + '/admin/scopes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showAlert('scopesAlert', 'Scope created successfully!', 'success');
+                    closeModal('scopeModal');
+                    loadScopes();
+                } else {
+                    showAlert('scopesAlert', 'Error creating scope', 'error');
+                }
+            } catch (error) {
+                showAlert('scopesAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                const [users, clients, scopes, audit] = await Promise.all([
+                    fetch(getApiUrl() + '/admin/users').then(r => r.json()).catch(() => []),
+                    fetch(getApiUrl() + '/admin/clients').then(r => r.json()).catch(() => []),
+                    fetch(getApiUrl() + '/admin/scopes').then(r => r.json()).catch(() => []),
+                    fetch(getApiUrl() + '/admin/audit-logs?pageSize=10').then(r => r.json()).catch(() => [])
+                ]);
+
+                document.getElementById('totalUsers').textContent = Array.isArray(users) ? users.length : 0;
+                document.getElementById('totalClients').textContent = Array.isArray(clients) ? clients.length : 0;
+                document.getElementById('totalScopes').textContent = Array.isArray(scopes) ? scopes.length : 0;
+                document.getElementById('recentEvents').textContent = Array.isArray(audit) ? audit.length : 0;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch(getApiUrl() + '/admin/users');
+                const users = await response.json();
+                
+                let html = '<table><thead><tr><th>Username</th><th>Email</th><th>2FA</th><th>Created</th></tr></thead><tbody>';
+                if (Array.isArray(users) && users.length > 0) {
+                    users.forEach(user => {
+                        html += `<tr>
+                            <td><strong>${user.username || 'N/A'}</strong></td>
+                            <td>${user.email || 'N/A'}</td>
+                            <td><span class="badge ${user.twoFactorEnabled ? 'badge-success' : 'badge-danger'}">${user.twoFactorEnabled ? 'Enabled' : 'Disabled'}</span></td>
+                            <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                        </tr>`;
+                    });
+                } else {
+                    html += '<tr><td colspan="4" style="text-align: center; padding: 40px;">No users found. <a href="#" onclick="showUserForm(); return false;" style="color: #667eea; text-decoration: none;">Create one</a></td></tr>';
+                }
+                html += '</tbody></table>';
+                document.getElementById('usersTable').innerHTML = html;
+            } catch (error) {
+                showAlert('usersAlert', 'Error loading users: ' + error.message, 'error');
+            }
+        }
+
+        async function loadClients() {
+            try {
+                const response = await fetch(getApiUrl() + '/admin/clients');
+                const clients = await response.json();
+                
+                let html = '';
+                if (Array.isArray(clients) && clients.length > 0) {
+                    clients.forEach(client => {
+                        html += `<div class="card">
+                            <h3>${client.name || 'Unnamed'}</h3>
+                            <p><strong>Type:</strong> ${client.clientType || 'Unknown'}</p>
+                            <p><strong>Status:</strong> <span class="badge ${client.isActive ? 'badge-success' : 'badge-danger'}">${client.isActive ? 'Active' : 'Inactive'}</span></p>
+                            ${client.description ? '<p>' + client.description + '</p>' : ''}
+                            <span class="label">${client.redirectUris ? client.redirectUris.length : 0} Redirect URIs</span>
+                        </div>`;
+                    });
+                } else {
+                    html = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">No clients created yet. <a href="#" onclick="showClientForm(); return false;" style="color: #667eea;">Create one</a></div>';
+                }
+                document.getElementById('clientsGrid').innerHTML = html;
+            } catch (error) {
+                showAlert('clientsAlert', 'Error loading clients: ' + error.message, 'error');
+            }
+        }
+
+        async function loadScopes() {
+            try {
+                const response = await fetch(getApiUrl() + '/admin/scopes');
+                const scopes = await response.json();
+                
+                let html = '<table><thead><tr><th>Name</th><th>Display Name</th><th>Status</th><th>Created</th></tr></thead><tbody>';
+                if (Array.isArray(scopes) && scopes.length > 0) {
+                    scopes.forEach(scope => {
+                        html += `<tr>
+                            <td><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px;">${scope.name || 'N/A'}</code></td>
+                            <td>${scope.displayName || 'N/A'}</td>
+                            <td><span class="badge ${scope.isActive ? 'badge-success' : 'badge-danger'}">${scope.isActive ? 'Active' : 'Inactive'}</span></td>
+                            <td>${new Date(scope.createdAt).toLocaleDateString()}</td>
+                        </tr>`;
+                    });
+                } else {
+                    html += '<tr><td colspan="4" style="text-align: center; padding: 40px;">No scopes created. <a href="#" onclick="showScopeForm(); return false;" style="color: #667eea;">Create one</a></td></tr>';
+                }
+                html += '</tbody></table>';
+                document.getElementById('scopesTable').innerHTML = html;
+            } catch (error) {
+                showAlert('scopesAlert', 'Error loading scopes: ' + error.message, 'error');
+            }
+        }
+
+        async function loadAuditLogs() {
+            try {
+                const response = await fetch(getApiUrl() + '/admin/audit-logs?pageSize=50');
+                const logs = await response.json();
+                
+                let html = '<table><thead><tr><th>Action</th><th>Resource</th><th>Status</th><th>IP Address</th><th>Timestamp</th></tr></thead><tbody>';
+                if (Array.isArray(logs) && logs.length > 0) {
+                    logs.forEach(log => {
+                        html += `<tr>
+                            <td><strong>${log.action || 'N/A'}</strong></td>
+                            <td>${log.resource || 'N/A'}</td>
+                            <td><span class="badge ${log.success ? 'badge-success' : 'badge-danger'}">${log.success ? 'Success' : 'Failed'}</span></td>
+                            <td>${log.ipAddress || 'N/A'}</td>
+                            <td>${new Date(log.createdAt).toLocaleString()}</td>
+                        </tr>`;
+                    });
+                } else {
+                    html += '<tr><td colspan="5" style="text-align: center; padding: 40px;">No audit logs found</td></tr>';
+                }
+                html += '</tbody></table>';
+                document.getElementById('auditTable').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading audit logs:', error);
+                document.getElementById('auditTable').innerHTML = '<div class="alert alert-error">Error loading audit logs: ' + error.message + '</div>';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        }
+
+        // Check status on load
+        checkStatus();
+        setInterval(checkStatus, 10000);
+    </script>
+</body>
+</html>

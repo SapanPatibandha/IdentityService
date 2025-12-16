@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: identity-service-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: identity_service
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - identity-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  identityservice:
+    build: .
+    container_name: identity-service-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=identity_service;Username=postgres;Password=postgres"
+      Jwt__Issuer: "identityservice"
+      Jwt__Audience: "identityservice-api"
+      Jwt__ExpiryMinutes: "60"
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - identity-network
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  identity-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

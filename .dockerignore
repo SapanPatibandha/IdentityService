@@ -1,0 +1,17 @@
+.git
+.gitignore
+.dockerignore
+README.md
+.vscode
+.idea
+bin
+obj
+.vs
+packages
+node_modules
+logs
+*.log
+.env
+.env.local
+appsettings.Development.json
+appsettings.Production.json
