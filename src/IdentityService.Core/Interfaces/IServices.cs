@@ -27,6 +27,7 @@ public interface IClientService
 {
     Task<Client> CreateClientAsync(string name, string? description, string clientType, List<string>? allowedScopeNames);
     Task<Client?> GetClientAsync(Guid clientId);
+    Task<List<Client>> GetAllClientsAsync();
     Task<Client?> ValidateClientAsync(string clientId, string clientSecret);
     Task<List<Scope>> GetClientScopesAsync(Guid clientId);
     Task UpdateClientAsync(Client client);

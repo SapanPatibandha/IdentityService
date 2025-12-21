@@ -65,12 +65,20 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = errorMessage });
         }
 
-        var clientId = HttpContext.Request.Headers["X-Client-Id"].FirstOrDefault() ?? Guid.NewGuid().ToString();
-        var client = await _clientService.GetClientAsync(Guid.Parse(clientId));
+        var clientIdHeader = HttpContext.Request.Headers["X-Client-Id"].FirstOrDefault();
+        var client = await _clientService.GetClientAsync(Guid.Parse(clientIdHeader ?? Guid.Empty.ToString()));
 
+        // If no valid client provided or not found, use the default admin client
         if (client == null)
         {
-            return BadRequest(new { message = "Invalid client" });
+            // Try to get the admin dashboard client
+            var adminClient = await _clientService.GetAllClientsAsync();
+            client = adminClient.FirstOrDefault(c => c.ClientId == "admin-dashboard");
+            
+            if (client == null)
+            {
+                return BadRequest(new { message = "No valid client available. Please provide X-Client-Id header." });
+            }
         }
 
         var scopes = await _clientService.GetClientScopesAsync(client.Id);

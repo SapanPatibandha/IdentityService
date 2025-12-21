@@ -21,7 +21,8 @@ builder.Host.UseSerilog();
 
 // Add services
 builder.Services.AddDbContext<IdentityDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.MigrationsAssembly("IdentityService.Infrastructure")));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
@@ -51,16 +52,18 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Configure JWT authentication
-var rsa = RSA.Create();
+// Configure JWT authentication with HS256 (HMAC)
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = "IdentityServiceSecretKeyForDevelopmentAndTestingPurposes1234567890!@#$%";
+var signingKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secretKey));
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new RsaSecurityKey(rsa),
+            IssuerSigningKey = signingKey,
             ValidateIssuer = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidateAudience = true,
@@ -69,13 +72,55 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddSingleton(signingKey);
+
 var app = builder.Build();
 
-// Apply migrations
+// Create database and apply migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    dbContext.Database.Migrate();
+    try
+    {
+        // First, ensure the database exists
+        dbContext.Database.EnsureCreated();
+        Log.Information("Database ensured to exist");
+        
+        // Then try to apply migrations if they exist
+        dbContext.Database.Migrate();
+        Log.Information("Migrations applied successfully");
+
+        // Create default admin client if it doesn't exist
+        var adminClient = await dbContext.Set<IdentityService.Core.Entities.Client>()
+            .FirstOrDefaultAsync(c => c.Name == "Admin Dashboard");
+        
+        if (adminClient == null)
+        {
+            var client = new IdentityService.Core.Entities.Client
+            {
+                Id = Guid.NewGuid(),
+                ClientId = "admin-dashboard",
+                ClientSecret = BCrypt.Net.BCrypt.HashPassword("admin-dashboard-secret"),
+                Name = "Admin Dashboard",
+                Description = "Built-in admin dashboard client",
+                ClientType = "Public",
+                IsActive = true,
+                AccessTokenLifetime = 3600,
+                RefreshTokenLifetime = 86400,
+                AllowRefreshTokenRotation = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            dbContext.Set<IdentityService.Core.Entities.Client>().Add(client);
+            await dbContext.SaveChangesAsync();
+            Log.Information("Default admin client created: admin-dashboard");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Error($"Database initialization failed: {ex.Message}");
+        throw;
+    }
 }
 
 app.UseSerilogRequestLogging();

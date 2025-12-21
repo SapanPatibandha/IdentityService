@@ -13,20 +13,19 @@ public class TokenService : ITokenService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
-    private readonly RSA _rsa;
+    private readonly SymmetricSecurityKey _signingKey;
 
-    public TokenService(IRefreshTokenRepository refreshTokenRepository, IUserRepository userRepository, IConfiguration configuration)
+    public TokenService(IRefreshTokenRepository refreshTokenRepository, IUserRepository userRepository, IConfiguration configuration, SymmetricSecurityKey signingKey)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _userRepository = userRepository;
         _configuration = configuration;
-        _rsa = RSA.Create();
+        _signingKey = signingKey;
     }
 
     public string GenerateAccessToken(User user, List<string> scopes, Guid clientId)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = new RsaSecurityKey(_rsa);
 
         var claims = new List<Claim>
         {
@@ -47,7 +46,7 @@ public class TokenService : ITokenService
             Expires = DateTime.UtcNow.AddHours(1),
             Issuer = _configuration["Jwt:Issuer"] ?? "identityservice",
             Audience = _configuration["Jwt:Audience"] ?? "identityservice-api",
-            SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256)
+            SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256)
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -103,12 +102,11 @@ public class TokenService : ITokenService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = new RsaSecurityKey(_rsa);
 
             var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key,
+                IssuerSigningKey = _signingKey,
                 ValidateIssuer = true,
                 ValidIssuer = _configuration["Jwt:Issuer"] ?? "identityservice",
                 ValidateAudience = true,

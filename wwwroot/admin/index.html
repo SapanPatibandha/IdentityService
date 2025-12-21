@@ -419,24 +419,137 @@
             font-family: 'Courier New', monospace;
             font-size: 12px;
         }
+
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .login-container h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-container .form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-container label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-container button:hover {
+            background: #764ba2;
+        }
+
+        .login-alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .login-alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .login-alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .auth-info {
+            font-size: 12px;
+            color: #666;
+            margin-right: 15px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Screen -->
+    <div id="loginContainer" class="login-container">
+        <h1>🔐 Identity Service</h1>
+        <div id="loginAlert"></div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <p style="text-align: center; color: #666; margin-top: 20px; font-size: 12px;">
+            Admin Portal - Requires Authentication
+        </p>
+    </div>
+
+    <div id="appContainer" style="display: none;">
+        <div class="container">
         <header>
             <div>
                 <h1>🔐 Identity Service</h1>
                 <p style="color: #666; font-size: 14px; margin-top: 4px;">Admin Dashboard</p>
             </div>
-            <div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <span class="auth-info" id="authInfo"></span>
                 <span class="status-badge online" id="status">● Online</span>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
             </div>
         </header>
 
         <div class="main-content">
             <div class="api-base">
                 <label>API Base URL</label>
-                <input type="text" id="apiUrl" value="http://localhost:5000/api/v1" placeholder="Enter API base URL">
+                <input type="text" id="apiUrl" value="http://localhost:8080/api/v1" placeholder="Enter API base URL">
             </div>
 
             <nav>
@@ -619,10 +732,79 @@
             </form>
         </div>
     </div>
+        </div> <!-- end appContainer -->
+    </div> <!-- end container -->
 
     <script>
-        const API_BASE = 'http://localhost:5000/api/v1';
+        const API_BASE = 'http://localhost:8080/api/v1';
         let currentToken = null;
+        let currentUser = null;
+
+        // Check if user is already logged in
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('authUser');
+            if (token && user) {
+                currentToken = token;
+                currentUser = JSON.parse(user);
+                showApp();
+            }
+        });
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const alertDiv = document.getElementById('loginAlert');
+
+            try {
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    alertDiv.innerHTML = '<div class="login-alert error">Invalid username or password</div>';
+                    return;
+                }
+
+                const data = await response.json();
+                currentToken = data.accessToken;
+                currentUser = { userId: data.userId, username: username };
+
+                // Store in localStorage
+                localStorage.setItem('authToken', currentToken);
+                localStorage.setItem('authUser', JSON.stringify(currentUser));
+
+                // Show app and hide login
+                showApp();
+            } catch (error) {
+                alertDiv.innerHTML = '<div class="login-alert error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        function handleLogout() {
+            currentToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('authUser');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginAlert').innerHTML = '';
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        function showApp() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            if (currentUser) {
+                document.getElementById('authInfo').textContent = 'Logged in as: ' + currentUser.username;
+            }
+            checkStatus();
+            loadDashboard();
+            setInterval(checkStatus, 10000);
+        }
 
         // Initialize
         document.getElementById('apiUrl').addEventListener('change', function() {
@@ -635,6 +817,14 @@
 
         function getApiUrl() {
             return document.getElementById('apiUrl').value;
+        }
+
+        function getAuthHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (currentToken) {
+                headers['Authorization'] = 'Bearer ' + currentToken;
+            }
+            return headers;
         }
 
         async function checkStatus() {
@@ -742,7 +932,7 @@
             try {
                 const response = await fetch(getApiUrl() + '/admin/clients', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(data)
                 });
                 
@@ -751,7 +941,8 @@
                     closeModal('clientModal');
                     loadClients();
                 } else {
-                    showAlert('clientsAlert', 'Error creating client', 'error');
+                    const error = await response.json().catch(() => ({}));
+                    showAlert('clientsAlert', error.message || 'Error creating client', 'error');
                 }
             } catch (error) {
                 showAlert('clientsAlert', 'Error: ' + error.message, 'error');
@@ -769,7 +960,7 @@
             try {
                 const response = await fetch(getApiUrl() + '/admin/scopes', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(data)
                 });
                 
@@ -778,7 +969,8 @@
                     closeModal('scopeModal');
                     loadScopes();
                 } else {
-                    showAlert('scopesAlert', 'Error creating scope', 'error');
+                    const error = await response.json().catch(() => ({}));
+                    showAlert('scopesAlert', error.message || 'Error creating scope', 'error');
                 }
             } catch (error) {
                 showAlert('scopesAlert', 'Error: ' + error.message, 'error');
@@ -788,10 +980,10 @@
         async function loadDashboard() {
             try {
                 const [users, clients, scopes, audit] = await Promise.all([
-                    fetch(getApiUrl() + '/admin/users').then(r => r.json()).catch(() => []),
-                    fetch(getApiUrl() + '/admin/clients').then(r => r.json()).catch(() => []),
-                    fetch(getApiUrl() + '/admin/scopes').then(r => r.json()).catch(() => []),
-                    fetch(getApiUrl() + '/admin/audit-logs?pageSize=10').then(r => r.json()).catch(() => [])
+                    fetch(getApiUrl() + '/admin/users', { headers: getAuthHeaders() }).then(r => r.json()).catch(() => []),
+                    fetch(getApiUrl() + '/admin/clients', { headers: getAuthHeaders() }).then(r => r.json()).catch(() => []),
+                    fetch(getApiUrl() + '/admin/scopes', { headers: getAuthHeaders() }).then(r => r.json()).catch(() => []),
+                    fetch(getApiUrl() + '/admin/audit-logs?pageSize=10', { headers: getAuthHeaders() }).then(r => r.json()).catch(() => [])
                 ]);
 
                 document.getElementById('totalUsers').textContent = Array.isArray(users) ? users.length : 0;
@@ -805,7 +997,9 @@
 
         async function loadUsers() {
             try {
-                const response = await fetch(getApiUrl() + '/admin/users');
+                const response = await fetch(getApiUrl() + '/admin/users', {
+                    headers: getAuthHeaders()
+                });
                 const users = await response.json();
                 
                 let html = '<table><thead><tr><th>Username</th><th>Email</th><th>2FA</th><th>Created</th></tr></thead><tbody>';
@@ -830,7 +1024,9 @@
 
         async function loadClients() {
             try {
-                const response = await fetch(getApiUrl() + '/admin/clients');
+                const response = await fetch(getApiUrl() + '/admin/clients', {
+                    headers: getAuthHeaders()
+                });
                 const clients = await response.json();
                 
                 let html = '';
@@ -855,7 +1051,9 @@
 
         async function loadScopes() {
             try {
-                const response = await fetch(getApiUrl() + '/admin/scopes');
+                const response = await fetch(getApiUrl() + '/admin/scopes', {
+                    headers: getAuthHeaders()
+                });
                 const scopes = await response.json();
                 
                 let html = '<table><thead><tr><th>Name</th><th>Display Name</th><th>Status</th><th>Created</th></tr></thead><tbody>';
@@ -880,7 +1078,9 @@
 
         async function loadAuditLogs() {
             try {
-                const response = await fetch(getApiUrl() + '/admin/audit-logs?pageSize=50');
+                const response = await fetch(getApiUrl() + '/admin/audit-logs?pageSize=50', {
+                    headers: getAuthHeaders()
+                });
                 const logs = await response.json();
                 
                 let html = '<table><thead><tr><th>Action</th><th>Resource</th><th>Status</th><th>IP Address</th><th>Timestamp</th></tr></thead><tbody>';
@@ -911,10 +1111,6 @@
                 event.target.classList.remove('show');
             }
         }
-
-        // Check status on load
-        checkStatus();
-        setInterval(checkStatus, 10000);
     </script>
 </body>
 </html>

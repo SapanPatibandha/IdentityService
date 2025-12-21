@@ -55,6 +55,31 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Get all OAuth2 clients
+    /// </summary>
+    [HttpGet("clients")]
+    public async Task<IActionResult> GetAllClients()
+    {
+        var clients = await _clientService.GetAllClientsAsync();
+
+        var dtos = clients.Select(c => new ClientDto
+        {
+            Id = c.Id,
+            ClientId = c.ClientId,
+            Name = c.Name,
+            Description = c.Description,
+            ClientType = c.ClientType,
+            IsActive = c.IsActive,
+            AccessTokenLifetime = c.AccessTokenLifetime,
+            RefreshTokenLifetime = c.RefreshTokenLifetime,
+            AllowedScopes = c.AllowedScopes.Select(s => s.Name).ToList(),
+            CreatedAt = c.CreatedAt
+        }).ToList();
+
+        return Ok(dtos);
+    }
+
+    /// <summary>
     /// Get client by ID
     /// </summary>
     [HttpGet("clients/{id}")]

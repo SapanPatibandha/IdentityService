@@ -53,6 +53,11 @@ public class ClientService : IClientService
         return await _clientRepository.GetByIdAsync(clientId);
     }
 
+    public async Task<List<Client>> GetAllClientsAsync()
+    {
+        return await _clientRepository.GetAllAsync();
+    }
+
     public async Task<Client?> ValidateClientAsync(string clientId, string clientSecret)
     {
         var client = await _clientRepository.GetByClientIdAsync(clientId);
