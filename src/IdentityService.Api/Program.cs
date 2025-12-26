@@ -20,9 +20,13 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services
-builder.Services.AddDbContext<IdentityDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsqlOptions => npgsqlOptions.MigrationsAssembly("IdentityService.Infrastructure")));
+// Only register PostgreSQL if not in Test environment (InMemory will be registered by test factory)
+if (!builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddDbContext<IdentityDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+            npgsqlOptions => npgsqlOptions.MigrationsAssembly("IdentityService.Infrastructure")));
+}
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
@@ -76,50 +80,53 @@ builder.Services.AddSingleton(signingKey);
 
 var app = builder.Build();
 
-// Create database and apply migrations
-using (var scope = app.Services.CreateScope())
+// Create database and apply migrations (only if not in Test environment)
+if (!app.Environment.IsEnvironment("Test"))
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        // First, ensure the database exists
-        dbContext.Database.EnsureCreated();
-        Log.Information("Database ensured to exist");
-        
-        // Then try to apply migrations if they exist
-        dbContext.Database.Migrate();
-        Log.Information("Migrations applied successfully");
-
-        // Create default admin client if it doesn't exist
-        var adminClient = await dbContext.Set<IdentityService.Core.Entities.Client>()
-            .FirstOrDefaultAsync(c => c.Name == "Admin Dashboard");
-        
-        if (adminClient == null)
+        var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        try
         {
-            var client = new IdentityService.Core.Entities.Client
+            // First, ensure the database exists
+            dbContext.Database.EnsureCreated();
+            Log.Information("Database ensured to exist");
+            
+            // Then try to apply migrations if they exist
+            dbContext.Database.Migrate();
+            Log.Information("Migrations applied successfully");
+
+            // Create default admin client if it doesn't exist
+            var adminClient = await dbContext.Set<IdentityService.Core.Entities.Client>()
+                .FirstOrDefaultAsync(c => c.Name == "Admin Dashboard");
+        
+            if (adminClient == null)
             {
-                Id = Guid.NewGuid(),
-                ClientId = "admin-dashboard",
-                ClientSecret = BCrypt.Net.BCrypt.HashPassword("admin-dashboard-secret"),
-                Name = "Admin Dashboard",
-                Description = "Built-in admin dashboard client",
-                ClientType = "Public",
-                IsActive = true,
-                AccessTokenLifetime = 3600,
-                RefreshTokenLifetime = 86400,
-                AllowRefreshTokenRotation = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-            dbContext.Set<IdentityService.Core.Entities.Client>().Add(client);
-            await dbContext.SaveChangesAsync();
-            Log.Information("Default admin client created: admin-dashboard");
+                var client = new IdentityService.Core.Entities.Client
+                {
+                    Id = Guid.NewGuid(),
+                    ClientId = "admin-dashboard",
+                    ClientSecret = BCrypt.Net.BCrypt.HashPassword("admin-dashboard-secret"),
+                    Name = "Admin Dashboard",
+                    Description = "Built-in admin dashboard client",
+                    ClientType = "Public",
+                    IsActive = true,
+                    AccessTokenLifetime = 3600,
+                    RefreshTokenLifetime = 86400,
+                    AllowRefreshTokenRotation = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                dbContext.Set<IdentityService.Core.Entities.Client>().Add(client);
+                await dbContext.SaveChangesAsync();
+                Log.Information("Default admin client created: admin-dashboard");
+            }
         }
-    }
-    catch (Exception ex)
-    {
-        Log.Error($"Database initialization failed: {ex.Message}");
-        throw;
+        catch (Exception ex)
+        {
+            Log.Error($"Database initialization failed: {ex.Message}");
+            throw;
+        }
     }
 }
 
