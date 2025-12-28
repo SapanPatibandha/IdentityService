@@ -6,6 +6,7 @@ using IdentityService.Infrastructure.Data;
 using IdentityService.Core.Interfaces;
 using IdentityService.Infrastructure.Repositories;
 using IdentityService.Application.Services;
+using IdentityService.Api.Extensions;
 using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,7 +54,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 // Configure JWT authentication with HS256 (HMAC)
@@ -76,6 +76,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddAuthorization();
 builder.Services.AddSingleton(signingKey);
 
 var app = builder.Build();
@@ -152,6 +153,11 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+
+// Map minimal APIs
+var api = app.MapGroup("/api/v1");
+app.MapAuthEndpoints(api);
+app.MapAdminEndpoints(api);
 
 app.Run();
+
